@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arc Race — Web3 Sprint Game on Arc Testnet</title>
+  <meta name="description" content="Arc Race is a retro-futuristic Web3 sprint game on Arc Testnet. Pay 0.1 USDC to race, submit your position on-chain, and climb the global leaderboard." />
+  <meta property="og:title" content="Arc Race — Web3 Sprint Game" />
+  <meta property="og:description" content="Race on-chain. Pay 0.1 USDC. Dominate the leaderboard." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Particle canvas background -->
+  <canvas id="particles-canvas" class="particles-bg" aria-hidden="true"></canvas>
+
+  <!-- Scanline overlay -->
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- Network Warning Banner -->
+  <div id="network-banner" class="network-banner hidden" role="alert">
+    <div class="banner-inner">
+      <span class="banner-icon">⚠️</span>
+      <span class="banner-text">Wrong network detected — please switch to <strong>Arc Testnet</strong> to continue</span>
+      <button id="btn-switch-network" class="btn-switch">⚡ Switch to Arc</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header" id="main-header">
+    <div class="header-inner">
+      <div class="logo-group">
+        <div class="logo-icon" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <polygon points="20,3 37,35 3,35" fill="none" stroke="#00ffff" stroke-width="2"/>
+            <polygon points="20,12 31,31 9,31" fill="rgba(0,255,255,0.08)" stroke="#a855f7" stroke-width="1.5"/>
+            <circle cx="20" cy="22" r="3.5" fill="#00ffff"/>
+            <circle cx="20" cy="22" r="6" fill="none" stroke="#00ffff" stroke-width="0.5" opacity="0.4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-title">ARC RACE</div>
+          <div class="logo-sub">Arc Testnet · Circle USDC</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="wallet-info" class="wallet-info hidden">
+          <div class="network-pill" id="network-pill">
+            <div class="network-dot" id="network-dot"></div>
+            <span id="network-label">Arc Testnet</span>
+          </div>
+          <div class="wallet-chip">
+            <span class="wallet-icon">👤</span>
+            <span id="wallet-address-display" class="wallet-address"></span>
+          </div>
+          <div class="balance-chip">
+            <span class="balance-icon">💰</span>
+            <span id="usdc-balance-display" class="usdc-balance">— USDC</span>
+          </div>
+        </div>
+        <button id="btn-connect" class="btn-connect" aria-label="Connect wallet">
+          <span class="btn-connect-icon">🔗</span>
+          <span>Connect Wallet</span>
+        </button>
+        <button id="btn-register-creator" class="btn-secondary hidden" disabled aria-label="Register creator">
+          <span>Register Creator</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Page -->
+  <main id="main-page">
+
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="hero-heading">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          ⚡ ARC TESTNET EXCLUSIVE · CIRCLE USDC POWERED
+        </div>
+        <h1 class="hero-title" id="hero-heading">
+          <span class="title-arc">ARC</span>
+          <span class="title-race">RACE</span>
+        </h1>
+        <p class="hero-tagline">Sprint. Collect. Dominate.</p>
+        <p class="hero-desc">
+          A retro Web3 sprint race on Arc Testnet. Pay <strong>0.1 USDC</strong> to enter,
+          collect energy on the track, outrun 3 AI opponents, and record your
+          position on-chain.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="hero-actions">
+          <button id="btn-play" class="btn-play disabled" disabled aria-label="Play game for 0.1 USDC">
+            <span class="btn-play-glow"></span>
+            <span class="btn-play-icon">▶</span>
+            <span class="btn-play-label">Play Game</span>
+            <span class="btn-play-cost">0.1 USDC Entry</span>
+          </button>
+          <button id="btn-checkin" class="btn-checkin disabled" disabled aria-label="Daily check-in for 0.1 USDC">
+            <span class="btn-checkin-icon">📅</span>
+            <span class="btn-checkin-label">Daily Check-In</span>
+            <span class="btn-checkin-cost">+20 pts · 0.1 USDC</span>
+          </button>
+        </div>
+
+        <!-- Check-in status -->
+        <div id="checkin-status" class="checkin-status hidden"></div>
+
+        <!-- Feature Pills -->
+        <div class="feature-pills" role="list">
+          <div class="pill" role="listitem">🏃 4-Player Sprint</div>
+          <div class="pill" role="listitem">⚡ Energy Boosts</div>
+          <div class="pill" role="listitem">🔗 On-Chain Scores</div>
+          <div class="pill" role="listitem">🏆 Live Leaderboard</div>
+          <div class="pill" role="listitem">📅 Daily Rewards</div>
+        </div>
+      </div>
+
+      <!-- Preview canvas -->
+      <div class="hero-visual">
+        <div class="preview-frame">
+          <div class="preview-label">LIVE PREVIEW</div>
+          <canvas id="previewCanvas" width="300" height="380" aria-label="Game preview animation"></canvas>
+          <div class="preview-scanlines"></div>
+        </div>
+        <div class="preview-badge">4 RUNNERS · 3000m TRACK</div>
+      </div>
+    </section>
+
+    <!-- Stats Bar -->
+    <section class="stats-bar" aria-label="Game statistics">
+      <div class="stat-item">
+        <div class="stat-icon">👟</div>
+        <div class="stat-value" id="stat-players">0</div>
+        <div class="stat-label">Players Raced</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-icon">💵</div>
+        <div class="stat-value" id="stat-usdc">0.0</div>
+        <div class="stat-label">USDC Transacted</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value" id="stat-checkins">0</div>
+        <div class="stat-label">Check-Ins</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-icon">🔗</div>
+        <div class="stat-value">Arc Testnet</div>
+        <div class="stat-label">Chain ID: 5042002</div>
+      </div>
+    </section>
+
+    <!-- Leaderboard -->
+    <section class="leaderboard-section" id="leaderboard-section" aria-labelledby="lb-heading">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2 class="section-title" id="lb-heading">🏆 Global Leaderboard</h2>
+          <div class="section-subtitle">Top racers on Arc Testnet</div>
+        </div>
+        <button id="btn-refresh-lb" class="btn-refresh" title="Refresh leaderboard" aria-label="Refresh leaderboard">
+          <span class="refresh-icon">↻</span>
+        </button>
+      </div>
+      <div class="leaderboard-table-wrap">
+        <table class="leaderboard-table" aria-label="Leaderboard">
+          <thead>
+            <tr>
+              <th scope="col">RANK</th>
+              <th scope="col">WALLET</th>
+              <th scope="col">SCORE</th>
+              <th scope="col">RACES</th>
+              <th scope="col">BEST</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <tr><td colspan="5" class="lb-empty">🏁 No entries yet — be the first to race!</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- How To Play -->
+    <section class="how-to-play" aria-labelledby="htp-heading">
+      <h2 class="section-title" id="htp-heading">🕹️ How to Play</h2>
+      <div class="htp-grid">
+        <div class="htp-card">
+          <div class="htp-num">01</div>
+          <div class="htp-icon">🔗</div>
+          <h3>Connect Wallet</h3>
+          <p>Connect MetaMask or any EVM wallet. Auto-switches to Arc Testnet.</p>
+        </div>
+        <div class="htp-card">
+          <div class="htp-num">02</div>
+          <div class="htp-icon">💰</div>
+          <h3>Pay 0.1 USDC</h3>
+          <p>Entry fee powers the race. Get testnet USDC free from Circle Faucet.</p>
+        </div>
+        <div class="htp-card">
+          <div class="htp-num">03</div>
+          <div class="htp-icon">⚡</div>
+          <h3>Race &amp; Collect</h3>
+          <p>Use ← → or A/D keys to switch lanes. Grab energy to boost speed!</p>
+        </div>
+        <div class="htp-card">
+          <div class="htp-num">04</div>
+          <div class="htp-icon">🏆</div>
+          <h3>Submit Score</h3>
+          <p>Pay 0.1 USDC to record your position on-chain on the leaderboard.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-brand">ARC RACE</div>
+        <div class="footer-links">
+          <a href="https://docs.arc.network" target="_blank" rel="noopener">Docs</a>
+          <a href="https://testnet.arcscan.app" target="_blank" rel="noopener">Explorer</a>
+          <a href="https://faucet.circle.com" target="_blank" rel="noopener">USDC Faucet</a>
+          <a href="https://discord.com/invite/buildonarc" target="_blank" rel="noopener">Discord</a>
+        </div>
+        <div class="footer-note">Built exclusively for Arc Testnet · Powered by Circle USDC</div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  GAME OVERLAY                           -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="game-overlay" class="game-overlay hidden" role="main" aria-label="Race game">
+    <div class="game-container">
+
+      <!-- Game HUD -->
+      <div class="game-hud">
+        <div class="hud-block">
+          <div class="hud-label">POSITION</div>
+          <div class="hud-value position-val" id="hud-position">—</div>
+        </div>
+        <div class="hud-block hud-center">
+          <div class="hud-label">DISTANCE</div>
+          <div class="progress-track" role="progressbar" aria-label="Race progress" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-fill" id="hud-progress"></div>
+            <div class="progress-glow" id="hud-progress-glow"></div>
+          </div>
+          <div class="hud-dist-label" id="hud-dist">0%</div>
+        </div>
+        <div class="hud-block">
+          <div class="hud-label">SPEED</div>
+          <div class="hud-value" id="hud-speed">—</div>
+        </div>
+        <div class="hud-block">
+          <div class="hud-label">TIME</div>
+          <div class="hud-value" id="hud-time">0.0s</div>
+        </div>
+      </div>
+
+      <!-- Energy Bar -->
+      <div class="energy-bar-container">
+        <span class="energy-label">⚡ ENERGY</span>
+        <div class="energy-bar-bg" role="progressbar" aria-label="Energy level" aria-valuemin="0" aria-valuemax="100">
+          <div class="energy-bar-fill" id="energy-bar"></div>
+        </div>
+        <span class="energy-pct" id="energy-pct">50%</span>
+      </div>
+
+      <!-- Canvas area -->
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" aria-label="Race track"></canvas>
+
+        <!-- Countdown overlay -->
+        <div id="countdown-overlay" class="countdown-overlay hidden">
+          <div class="countdown-text" id="countdown-text">3</div>
+        </div>
+
+        <!-- Network pause overlay -->
+        <div id="network-pause-overlay" class="network-pause-overlay hidden">
+          <div class="pause-content">
+            <div class="pause-icon">⚠️</div>
+            <div class="pause-title">WRONG NETWORK</div>
+            <div class="pause-desc">Switch back to Arc Testnet to resume the race</div>
+            <button id="btn-pause-switch" class="btn-switch">⚡ Switch Network</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls hint -->
+      <div class="controls-hint">
+        <span class="hint-key">←A</span> lane left
+        <span class="hint-sep">·</span>
+        <span class="hint-key">→D</span> lane right
+        <span class="hint-sep">·</span>
+        <span>⚡ Grab energy orbs to boost!</span>
+      </div>
+
+      <button id="btn-exit-game" class="btn-exit-game" aria-label="Exit game">✕ EXIT</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  END GAME MODAL                         -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="end-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="end-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-icon" id="end-modal-icon">🏁</div>
+        <h2 class="modal-title" id="end-modal-title">RACE OVER</h2>
+        <div class="modal-title-sub" id="end-modal-sub"></div>
+      </div>
+      <div class="modal-body">
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">YOUR POSITION</div>
+            <div class="result-value" id="result-position">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">SCORE EARNED</div>
+            <div class="result-value highlight" id="result-score">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">FINISH TIME</div>
+            <div class="result-value" id="result-time">—</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">ENERGY BONUS</div>
+            <div class="result-value" id="result-energy">—</div>
+          </div>
+        </div>
+        <!-- Podium -->
+        <div class="podium-wrap">
+          <div class="podium-title">RACE PODIUM</div>
+          <div class="podium" id="race-podium"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <p class="modal-note">Submit your position on-chain for <strong>0.1 USDC</strong> to record it permanently.</p>
+        <div class="modal-buttons">
+          <button id="btn-submit-score" class="btn-primary">
+            <span>📤</span> Submit Position <span class="cost-tag">0.1 USDC</span>
+          </button>
+          <button id="btn-play-again" class="btn-secondary">
+            <span>🔄</span> Play Again
+          </button>
+          <button id="btn-close-modal" class="btn-ghost">← Back to Home</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  PAYMENT MODAL                          -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="payment-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Payment processing">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-icon">💳</div>
+        <h2 class="modal-title" id="payment-modal-title">Processing Payment</h2>
+      </div>
+      <div class="modal-body">
+        <div class="payment-row">
+          <span class="payment-label">Amount</span>
+          <span class="payment-value">0.1 USDC</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Network</span>
+          <span class="payment-value network-tag">Arc Testnet</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Token</span>
+          <span class="payment-value">Circle USDC</span>
+        </div>
+        <div class="payment-status" id="payment-status">
+          <div class="spinner"></div>
+          <span id="payment-status-text">Waiting for wallet confirmation…</span>
+        </div>
+        <div id="payment-tx-link" class="payment-tx-link hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="game.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
